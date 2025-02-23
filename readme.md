@@ -1,101 +1,95 @@
-# Binance Trading Bot mit Grafana Cloud (InfluxDB v3)
+```markdown
+# Binance Trading Bot
 
-Ein automatisierter **Binance Trading Bot**, der technische Indikatoren (RSI, EMA) verwendet, um Kauf- und Verkaufssignale zu generieren. Trades und Marktdaten werden in **InfluxDB v3 (Grafana Cloud)** gespeichert und können über **Grafana Dashboards** visualisiert werden.
+Dieses Repository enthält einen Python-basierten Trading-Bot für die Binance-Kryptowährungsbörse. Der Bot verwendet technische Indikatoren, um Kauf- und Verkaufssignale zu generieren, und speichert Trade-Daten in einer InfluxDB-Datenbank. Der Bot kann in einem Docker-Container ausgeführt werden, um die Portabilität und Isolation zu verbessern.
 
-## 🚀 Features
-✅ **Automatisierter Handel** auf Binance (Spot-Trading)  
-✅ **Technische Analyse**: RSI & EMA für Kauf-/Verkaufssignale  
-✅ **Integration mit Grafana Cloud** (InfluxDB v3) zur Speicherung & Analyse  
-✅ **Echtzeit-Datenvisualisierung** mit Grafana Dashboards  
-✅ **Einfach konfigurierbar & erweiterbar**  
+## Inhalt
 
----
+- [Installation](#installation)
+- [Konfiguration](#konfiguration)
+- [Ausführung](#ausführung)
+- [Docker](#docker)
+- [Abhängigkeiten](#abhängigkeiten)
+- [Lizenz](#lizenz)
 
-## 🛠 Installation & Einrichtung
-### 1️⃣ Voraussetzungen
-- **Python 3.8+**
-- **Binance API-Key** (Registriere dich bei [Binance](https://www.binance.com))
-- **Grafana Cloud Account** ([Anmelden](https://grafana.com/cloud))
-- **InfluxDB v3 Token** (Erstelle ein Token in Grafana Cloud)
+## Installation
 
-### 2️⃣ Python-Abhängigkeiten installieren
+1. Klonen Sie dieses Repository:
+
+    ```bash
+    git clone https://github.com/IhrBenutzername/binance-trading-bot.git
+    cd binance-trading-bot
+    ```
+
+2. Erstellen Sie eine virtuelle Umgebung und installieren Sie die Abhängigkeiten:
+
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # Auf Windows: venv\Scripts\activate
+    pip install -r requirements.txt
+    ```
+
+## Konfiguration
+
+1. Erstellen Sie eine `.env`-Datei im Stammverzeichnis des Projekts und fügen Sie Ihre API-Schlüssel und InfluxDB-Konfigurationen hinzu:
+
+    ```env
+    BINANCE_API_KEY=Ihr_Binance_API_Key
+    BINANCE_API_SECRET=Ihr_Binance_API_Secret
+    TELEGRAM_BOT_TOKEN=Ihr_Telegram_Bot_Token
+    INFLUXDB_URL=Ihre_InfluxDB_URL
+    INFLUXDB_TOKEN=Ihr_InfluxDB_Token
+    INFLUXDB_ORG=Ihre_InfluxDB_Organisation
+    INFLUXDB_BUCKET=Ihr_InfluxDB_Bucket
+    ```
+
+## Ausführung
+
+Führen Sie den Bot aus, indem Sie das folgende Kommando im Stammverzeichnis des Projekts ausführen:
+
 ```bash
-pip install python-dotenv influxdb-client pandas numpy ccxt ta requests
+python binance_bot_advanced.py
 ```
 
-### 3️⃣ Umgebungsvariablen setzen
-Erstelle eine **.env** Datei im Projektverzeichnis:
-```env
-BINANCE_API_KEY=dein_api_key
-BINANCE_SECRET=dein_secret
-INFLUXDB_URL=https://us-east-1-1.aws.cloud2.influxdata.com
-INFLUXDB_TOKEN=dein_influxdb_token
-ORG=306492
-BUCKET=stack-303219-influx-write
-```
+## Docker
 
-### 4️⃣ Konfiguration im Code anpassen
-Bearbeite den Code in `binance_bot.py`, um die Umgebungsvariablen zu laden:
-```python
-import os
-from dotenv import load_dotenv
+Um den Bot in einem Docker-Container auszuführen, folgen Sie diesen Schritten:
 
-# 📌 Umgebungsvariablen laden
-load_dotenv()
+1. Erstellen Sie ein Docker-Image:
 
-# 📌 Binance API
-api_key = os.getenv("BINANCE_API_KEY")
-api_secret = os.getenv("BINANCE_SECRET")
+    ```bash
+    docker build -t binance-trading-bot .
+    ```
 
-# 📌 InfluxDB v3 (Grafana Cloud)
-INFLUXDB_URL = os.getenv("INFLUXDB_URL")
-INFLUXDB_TOKEN = os.getenv("INFLUXDB_TOKEN")
-ORG = os.getenv("ORG")
-BUCKET = os.getenv("BUCKET")
-```
+2. Führen Sie den Docker-Container aus:
 
-### 5️⃣ Bot starten
+    ```bash
+    docker run --env-file .env binance-trading-bot
+    ```
+
+## Abhängigkeiten
+
+Die Abhängigkeiten für dieses Projekt sind in der `requirements.txt`-Datei aufgeführt. Sie können sie mit dem folgenden Befehl installieren:
+
 ```bash
-python binance_bot.py
-```
-Der Bot ruft nun Marktdaten ab, generiert Signale und speichert Trades in **Grafana Cloud (InfluxDB v3)**.
-
----
-
-## 📊 Grafana Cloud Dashboard einrichten
-### 1️⃣ InfluxDB in Grafana verbinden
-1. **Gehe zu Grafana Cloud → Data Sources → InfluxDB v3**
-2. **Verbinde mit deinem Token & Bucket**
-
-### 2️⃣ Beispiel-Query für Trades
-Füge in Grafana ein **Panel** mit folgendem Flux-Query hinzu:
-```flux
-from(bucket: "stack-303219-influx-write")
-|> range(start: -1h)
-|> filter(fn: (r) => r._measurement == "trades")
+pip install -r requirements.txt
 ```
 
-### 3️⃣ RSI & EMA als Time-Series Panel
-```flux
-from(bucket: "stack-303219-influx-write")
-|> range(start: -1h)
-|> filter(fn: (r) => r._measurement == "trades" and (r._field == "RSI" or r._field == "EMA_20"))
+## Lizenz
+
+Dieses Projekt ist unter der MIT-Lizenz lizenziert. Weitere Informationen finden Sie in der [LICENSE](LICENSE)-Datei.
+
+## Haftungsausschluss
+
+Dieser Bot ist für Bildungszwecke gedacht. Der Einsatz dieses Bots kann zu finanziellen Verlusten führen. Verwenden Sie ihn auf eigenes Risiko und testen Sie ihn gründlich, bevor Sie ihn in einer Produktionsumgebung einsetzen.
+
+---
+
+Fühlen Sie sich frei, Issues oder Pull Requests zu erstellen, um dieses Projekt zu verbessern!
 ```
 
----
+Um die Datei herunterzuladen, können Sie den folgenden Link verwenden:
 
-## ⚙️ Anpassungen & Erweiterungen
-- **Trading-Strategie ändern:** Passe die `get_signal()`-Methode an.
-- **Weitere Indikatoren hinzufügen:** Nutze `ta` (Technical Analysis Library) für zusätzliche Analysen.
-- **Order-Funktion erweitern:** Implementiere Stop-Loss & Take-Profit Strategien.
+[README.md herunterladen](https://raw.githubusercontent.com/IhrBenutzername/binance-trading-bot/main/README.md)
 
----
-
-## 📜 Lizenz
-MIT License
-
----
-
-## ✨ Kontakt & Feedback
-Hast du Fragen oder möchtest etwas verbessern? Erstelle ein Issue oder Pull Request! 😊
-
+Ersetzen Sie `IhrBenutzername` durch Ihren tatsächlichen GitHub-Benutzernamen und stellen Sie sicher, dass die Datei im Stammverzeichnis Ihres Repositorys liegt. Wenn Sie die Datei lokal speichern möchten, können Sie den Inhalt kopieren und in einer neuen Datei namens `README.md` in Ihrem Projektverzeichnis speichern.

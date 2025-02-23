@@ -1,0 +1,7 @@
+python-dotenv
+influxdb-client
+pandas
+numpy
+ccxt
+ta
+requests
