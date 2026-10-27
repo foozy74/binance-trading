@@ -1,21 +1,36 @@
-# Verwenden Sie ein offizielles Python-Image als Basis
 FROM python:3.11-slim
 
-# Setzen Sie die Arbeitsverzeichnis im Container
 WORKDIR /app
 
-# Kopieren Sie die requirements.txt-Datei in den Container
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
 COPY requirements.txt .
 
-# Installieren Sie die Python-Abhängigkeiten
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Kopieren Sie den Rest des Anwendungscodes in den Container
+# Copy application code
 COPY . .
 
-# Setzen Sie die Umgebungsvariable für die .env-Datei
+# Create data directory
+RUN mkdir -p ./data
+
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV HOST=0.0.0.0
+ENV PORT=8000
 
-# Befehl zum Ausführen des Skripts
-CMD ["python", "biance_bot_advanced.py"]
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

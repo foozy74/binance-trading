@@ -1,0 +1,19 @@
+# Secrets und lokale Daten nie ins Image
+.env
+.env.*
+!.env.example
+env/
+venv/
+.venv/
+data/
+*.db
+# Entwicklung
+.git
+.gitignore
+.DS_Store
+.pytest_cache/
+__pycache__/
+*.pyc
+htmlcov/
+tests/
+frontend/

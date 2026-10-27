@@ -1,0 +1,62 @@
+version: '3.8'
+services:
+  trading-bot:
+    build: .
+    container_name: binance-trading-bot
+    environment:
+      - DRY_RUN=${DRY_RUN:-true}
+      - DATABASE_URL=sqlite:///./data/trading.db
+      - JWT_SECRET=${JWT_SECRET}
+      - API_KEYS=${API_KEYS}
+      - BINANCE_API_KEY=${BINANCE_API_KEY}
+      - BINANCE_API_SECRET=${BINANCE_API_SECRET}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - ACTIVE_STRATEGY=${ACTIVE_STRATEGY:-obv_vwap}
+      - TRADE_PERCENTAGE=${TRADE_PERCENTAGE:-0.10}
+      - TRAILING_STOP_PERCENT=${TRAILING_STOP_PERCENT:-0.02}
+      - TAKE_PROFIT_PERCENT=${TAKE_PROFIT_PERCENT:-0.05}
+      - EXCHANGE=${EXCHANGE:-binance}
+      - SYMBOL=${SYMBOL:-BTC/USDT}
+      - HYPERLIQUID_WALLET_ADDRESS=${HYPERLIQUID_WALLET_ADDRESS:-}
+      - HYPERLIQUID_PRIVATE_KEY=${HYPERLIQUID_PRIVATE_KEY:-}
+      - VOLUME_FILTER=${VOLUME_FILTER:-0}
+      - STOP_ATR_MULTIPLE=${STOP_ATR_MULTIPLE:-3}
+      - TAKE_PROFIT_R=${TAKE_PROFIT_R:-0}
+    volumes:
+      - trading_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - trading-network
+
+  frontend:
+    build: ./frontend
+    container_name: trading-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - trading-bot
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - trading-network
+    labels:
+      - coolify.app.name=binance-trading-frontend
+      - coolify.app.healthCheckPath=/
+
+volumes:
+  trading_data:
+
+networks:
+  trading-network:
+    driver: bridge
