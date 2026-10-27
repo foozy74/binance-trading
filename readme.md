@@ -1,95 +1,310 @@
-```markdown
-# Binance Trading Bot
+# Binance Trading Bot v2.0
 
-Dieses Repository enthält einen Python-basierten Trading-Bot für die Binance-Kryptowährungsbörse. Der Bot verwendet technische Indikatoren, um Kauf- und Verkaufssignale zu generieren, und speichert Trade-Daten in einer InfluxDB-Datenbank. Der Bot kann in einem Docker-Container ausgeführt werden, um die Portabilität und Isolation zu verbessern.
+Python-basierter Trading-Bot für die Binance-Kryptowährungsbörse mit REST-API, mehreren Trading-Strategien, Coolify-Deployment-Support und modernem Web-UI.
 
-## Inhalt
+## 🚀 Features
 
-- [Installation](#installation)
-- [Konfiguration](#konfiguration)
-- [Ausführung](#ausführung)
-- [Docker](#docker)
-- [Abhängigkeiten](#abhängigkeiten)
-- [Lizenz](#lizenz)
+- **🎨 Modernes Web-UI**: React + Vite mit Glassmorphism Design
+- **📊 Echtzeit-Dashboard**: Bot-Status, Signale, Trades, Konfiguration
+- **🔌 REST-API** mit FastAPI (Health-Checks, Metrics, Trade-History)
+- **📈 Mehrere Trading-Strategien**: OBV+VWAP, RSI-Divergenz, MACD-Crossover, Multi-Signal
+- **🧪 Dry-Run Modus** für Paper-Trading ohne Risiko
+- **📉 Prometheus-Metrics** für Monitoring
+- **📱 Telegram-Benachrichtigungen** parallel zur API
+- **💾 SQLite-Datenbank** für Trade-History
+- **🐳 Docker-ready** mit Coolify-Konfiguration
+- **🔐 JWT + API-Key Authentication**
 
-## Installation
+## 📁 Projektstruktur
 
-1. Klonen Sie dieses Repository:
-
-    ```bash
-    git clone https://github.com/IhrBenutzername/binance-trading-bot.git
-    cd binance-trading-bot
-    ```
-
-2. Erstellen Sie eine virtuelle Umgebung und installieren Sie die Abhängigkeiten:
-
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # Auf Windows: venv\Scripts\activate
-    pip install -r requirements.txt
-    ```
-
-## Konfiguration
-
-1. Erstellen Sie eine `.env`-Datei im Stammverzeichnis des Projekts und fügen Sie Ihre API-Schlüssel und InfluxDB-Konfigurationen hinzu:
-
-    ```env
-    BINANCE_API_KEY=Ihr_Binance_API_Key
-    BINANCE_API_SECRET=Ihr_Binance_API_Secret
-    TELEGRAM_BOT_TOKEN=Ihr_Telegram_Bot_Token
-    INFLUXDB_URL=Ihre_InfluxDB_URL
-    INFLUXDB_TOKEN=Ihr_InfluxDB_Token
-    INFLUXDB_ORG=Ihre_InfluxDB_Organisation
-    INFLUXDB_BUCKET=Ihr_InfluxDB_Bucket
-    ```
-
-## Ausführung
-
-Führen Sie den Bot aus, indem Sie das folgende Kommando im Stammverzeichnis des Projekts ausführen:
-
-```bash
-python binance_bot_advanced.py
+```
+binance-trading/
+├── app/                       # Backend (FastAPI)
+│   ├── main.py                # FastAPI Application
+│   ├── config.py              # Configuration (pydantic)
+│   ├── api/
+│   │   ├── routes.py          # REST-Endpoints
+│   │   ├── auth.py            # JWT + API-Key Auth
+│   │   └── metrics.py         # Prometheus Metrics
+│   ├── bot/
+│   │   ├── trader.py          # Trading-Loop
+│   │   ├── signals.py         # Signal-Generierung
+│   │   ├── indicators.py      # Technische Indikatoren
+│   │   └── strategies/        # Trading-Strategien
+│   ├── db/
+│   │   ├── models.py          # SQLAlchemy Models
+│   │   ├── database.py        # Database Connection
+│   │   └── repository.py      # CRUD Operations
+│   └── services/
+│       ├── binance.py         # Binance API Wrapper
+│       └── telegram.py        # Telegram Notifications
+├── frontend/                  # Frontend (React + Vite)
+│   ├── src/
+│   │   ├── components/        # React Components
+│   │   ├── services/          # API Services
+│   │   └── styles/            # CSS Styles
+│   ├── Dockerfile             # NGINX Docker Image
+│   └── nginx.conf             # NGINX Configuration
+├── tests/
+│   ├── test_indicators.py
+│   ├── test_signals.py
+│   ├── test_api.py
+│   └── test_trading.py
+├── docker-compose.yml
+├── docker-compose.coolify.yml
+└── requirements.txt
 ```
 
-## Docker
+## 🛠️ Installation
 
-Um den Bot in einem Docker-Container auszuführen, folgen Sie diesen Schritten:
-
-1. Erstellen Sie ein Docker-Image:
-
-    ```bash
-    docker build -t binance-trading-bot .
-    ```
-
-2. Führen Sie den Docker-Container aus:
-
-    ```bash
-    docker run --env-file .env binance-trading-bot
-    ```
-
-## Abhängigkeiten
-
-Die Abhängigkeiten für dieses Projekt sind in der `requirements.txt`-Datei aufgeführt. Sie können sie mit dem folgenden Befehl installieren:
+### Local Development (Backend)
 
 ```bash
+# Virtuelle Umgebung erstellen
+python -m venv venv && source venv/bin/activate
+
+# Abhängigkeiten installieren
 pip install -r requirements.txt
+
+# Umgebungsvariablen konfigurieren
+cp .env.example .env
+# .env mit eigenen Werten bearbeiten
+
+# Bot starten (API + Trading)
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-## Lizenz
+### Local Development (Frontend)
 
-Dieses Projekt ist unter der MIT-Lizenz lizenziert. Weitere Informationen finden Sie in der [LICENSE](LICENSE)-Datei.
+```bash
+cd frontend
 
-## Haftungsausschluss
+# Dependencies installieren
+npm install
 
-Dieser Bot ist für Bildungszwecke gedacht. Der Einsatz dieses Bots kann zu finanziellen Verlusten führen. Verwenden Sie ihn auf eigenes Risiko und testen Sie ihn gründlich, bevor Sie ihn in einer Produktionsumgebung einsetzen.
-
----
-
-Fühlen Sie sich frei, Issues oder Pull Requests zu erstellen, um dieses Projekt zu verbessern!
+# Dev-Server starten (mit Proxy zum Backend)
+npm run dev
 ```
 
-Um die Datei herunterzuladen, können Sie den folgenden Link verwenden:
+### Docker
 
-[README.md herunterladen](https://raw.githubusercontent.com/IhrBenutzername/binance-trading-bot/main/README.md)
+```bash
+# Images bauen
+docker-compose build
 
-Ersetzen Sie `IhrBenutzername` durch Ihren tatsächlichen GitHub-Benutzernamen und stellen Sie sicher, dass die Datei im Stammverzeichnis Ihres Repositorys liegt. Wenn Sie die Datei lokal speichern möchten, können Sie den Inhalt kopieren und in einer neuen Datei namens `README.md` in Ihrem Projektverzeichnis speichern.
+# Alle Services starten (Backend + Frontend)
+docker-compose up -d
+
+# Frontend: http://localhost:80
+# Backend API: http://localhost:8000
+```
+
+### Docker Compose
+
+```bash
+# Standard (mit Frontend)
+docker-compose up -d
+
+# Coolify
+docker-compose -f docker-compose.coolify.yml up -d
+```
+
+### Local Development (Frontend)
+
+```bash
+cd frontend
+
+# Dependencies installieren
+npm install
+
+# Dev-Server starten (mit Proxy zum Backend)
+npm run dev
+```
+
+### Docker
+
+```bash
+# Images bauen
+docker-compose build
+
+# Alle Services starten (Backend + Frontend)
+docker-compose up -d
+
+# Frontend: http://localhost:80
+# Backend API: http://localhost:8000
+```
+
+### Docker Compose
+
+```bash
+# Standard (mit Frontend)
+docker-compose up -d
+
+# Coolify
+docker-compose -f docker-compose.coolify.yml up -d
+```
+
+## 🌐 Web-UI
+
+Das Dashboard ist nach dem Start unter `http://localhost:80` verfügbar.
+
+**Features:**
+- 📊 Echtzeit-Bot-Status (alle 10 Sekunden aktualisiert)
+- 📈 Letzte Signale mit Strategie und Confidence
+- 💼 Trade-History Tabelle
+- ⚙️ Konfigurations-Panel (Strategie wechseln, etc.)
+- 🔐 API-Key Authentication
+
+**API-Key eingeben** um auf geschützte Endpoints zuzugreifen.
+
+## 🌐 Web-UI
+
+Das Dashboard ist nach dem Start unter `http://localhost:80` verfügbar.
+
+**Features:**
+- 📊 Echtzeit-Bot-Status (alle 10 Sekunden aktualisiert)
+- 📈 Letzte Signale mit Strategie und Confidence
+- 💼 Trade-History Tabelle
+- ⚙️ Konfigurations-Panel (Strategie wechseln, etc.)
+- 🔐 API-Key Authentication
+
+**API-Key eingeben** um auf geschützte Endpoints zuzugreifen.
+
+## 📡 API-Endpoints
+
+### Public Endpoints
+
+| Endpoint | Beschreibung |
+|----------|--------------|
+| `GET /` | API-Info |
+| `GET /health` | Health-Check für Coolify |
+| `GET /metrics` | Prometheus-Metrics |
+
+### Protected Endpoints (API-Key required)
+
+| Endpoint | Beschreibung |
+|----------|--------------|
+| `GET /api/status` | Bot-Status |
+| `GET /api/signals` | Historische Signale |
+| `GET /api/trades` | Historische Trades |
+| `GET /api/portfolio` | Portfolio-Übersicht |
+| `GET /api/config` | Aktuelle Konfiguration |
+| `PUT /api/config` | Konfiguration aktualisieren |
+
+### API-Key verwenden
+
+```bash
+curl -H "X-API-Key: your-secret-key" http://localhost:8000/api/status
+```
+
+## 📊 Trading-Strategien
+
+### 1. OBV + VWAP (Default)
+- On-Balance Volume + Volume Weighted Average Price
+- RSI-Filter (>70 blockiert BUY, <30 blockiert SELL)
+- Bollinger-Band-Filter
+
+### 2. RSI-Divergenz
+- Erkennt bullische/bärische Divergenzen
+- RSI-Reversal von Extremwerten
+
+### 3. MACD-Crossover
+- MACD-Linie kreuzt Signallinie
+- Nulllinien-Crossover
+
+### 4. Multi-Signal Consensus
+- Kombiniert alle Strategien
+- Erfordert 2 von 3 Übereinstimmungen
+
+### Strategie wechseln
+
+**Per Environment Variable:**
+```bash
+ACTIVE_STRATEGY=macd_crossover
+```
+
+**Per API (dynamisch):**
+```bash
+curl -X PUT http://localhost:8000/api/config \
+  -H "X-API-Key: your-secret" \
+  -H "Content-Type: application/json" \
+  -d '{"active_strategy": "multi_signal"}'
+```
+
+## 🔧 Konfiguration
+
+### Environment Variablen
+
+| Variable | Beschreibung | Default |
+|----------|--------------|---------|
+| `DRY_RUN` | Paper-Trading Modus | `true` |
+| `BINANCE_API_KEY` | Binance API Key | - |
+| `BINANCE_API_SECRET` | Binance API Secret | - |
+| `JWT_SECRET` | JWT Signing-Key | auto-generated |
+| `API_KEYS` | API-Keys (name:secret,name:secret) | - |
+| `ACTIVE_STRATEGY` | Trading-Strategie | `obv_vwap` |
+| `TRADE_PERCENTAGE` | Trade-Größe (% des Portfolios) | `0.10` |
+| `TRAILING_STOP_PERCENT` | Trailing Stop-Loss | `0.02` |
+| `TAKE_PROFIT_PERCENT` | Take-Profit | `0.05` |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token | - |
+| `TELEGRAM_CHAT_ID` | Telegram Chat ID | - |
+
+## 🧪 Tests ausführen
+
+```bash
+# Alle Tests
+pytest
+
+# Mit Coverage
+pytest --cov=app --cov-report=html
+
+# Einzelne Testdatei
+pytest tests/test_indicators.py -v
+
+# Einzelner Test
+pytest tests/test_signals.py::TestOBVVWAPStrategy::test_buy_signal -v
+```
+
+## 📈 Coolify-Deployment
+
+1. **Repository zu Coolify hinzufügen**
+2. **Build Settings:**
+   - Build Command: `docker build -t binance-trading-bot .`
+   - Start Command: (leer lassen, wird im Dockerfile definiert)
+3. **Environment Variables setzen** (aus `.env.example`)
+4. **Health Check Path:** `/health`
+5. **Port:** `8000`
+
+Oder `docker-compose.coolify.yml` verwenden.
+
+## 🔐 Authentication
+
+### API-Key generieren
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+### API-Keys konfigurieren
+
+```env
+API_KEYS=admin:generated-secret-1,service:generated-secret-2
+```
+
+### JWT Token erstellen (für zukünftige Features)
+
+```python
+from app.api.auth import create_access_token
+token = create_access_token({"sub": "username"})
+```
+
+## ⚠️ Haftungsausschluss
+
+Dieser Bot ist für **Bildungszwecke** gedacht. Trading birgt finanzielle Risiken. 
+- **Immer zuerst DRY_RUN=true testen!**
+- Nie mehr investieren als man verlieren kann
+- Eigene Due Diligence durchführen
+
+## 📝 Lizenz
+
+MIT License - siehe [LICENSE](LICENSE)
