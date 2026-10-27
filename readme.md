@@ -240,8 +240,10 @@ curl -X PUT http://localhost:8000/api/config \
 | `DRY_RUN` | Paper-Trading Modus | `true` |
 | `BINANCE_API_KEY` | Binance API Key | - |
 | `BINANCE_API_SECRET` | Binance API Secret | - |
-| `JWT_SECRET` | JWT Signing-Key | auto-generated |
-| `API_KEYS` | API-Keys (name:secret,name:secret) | - |
+| `JWT_SECRET` | JWT Signing-Key (min. 32 Zeichen) | auto-generated |
+| `API_KEYS` | API-Keys für Skripte (name:secret, Secret min. 16 Zeichen) | - |
+| `ADMIN_USERNAME` | Dashboard-Login Benutzer | `admin` |
+| `ADMIN_PASSWORD` | Dashboard-Login Passwort (min. 12 Zeichen, leer = Login aus) | - |
 | `ACTIVE_STRATEGY` | Trading-Strategie | `obv_vwap` |
 | `TRADE_PERCENTAGE` | Trade-Größe (% des Portfolios) | `0.10` |
 | `TRAILING_STOP_PERCENT` | Trailing Stop-Loss | `0.02` |
@@ -291,12 +293,19 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 API_KEYS=admin:generated-secret-1,service:generated-secret-2
 ```
 
-### JWT Token erstellen (für zukünftige Features)
+### Dashboard-Login
 
-```python
-from app.api.auth import create_access_token
-token = create_access_token({"sub": "username"})
+Alle `/api/*`-Routen verlangen einen Login (JWT, 8 h gültig) oder einen API-Key.
+`ADMIN_USERNAME`/`ADMIN_PASSWORD` setzen, dann im Dashboard anmelden – oder per API:
+
+```bash
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" -d '{"username":"admin","password":"..."}'
+# → {"access_token": "...", "token_type": "bearer"}
+curl -H "Authorization: Bearer <token>" http://localhost:8000/api/status
 ```
+
+Nach 10 Fehlversuchen ist der Login 15 Minuten gesperrt.
 
 ## ⚠️ Haftungsausschluss
 

@@ -3,7 +3,7 @@ export default function SignalsList({ signals }) {
     return (
       <div className="glass-card">
         <h2>📈 Recent Signals</h2>
-        <p style={{ color: '#a0a0b0' }}>No signals available. Enter API key to load.</p>
+        <p style={{ color: '#a0a0b0' }}>No signals available yet.</p>
       </div>
     )
   }

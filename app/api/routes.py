@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.db.database import get_db
 from app.db.repository import TradeRepository, SignalRepository, ConfigRepository
 from app.db.models import Trade, Signal
-from app.api.auth import verify_api_key
+from app.api.auth import authenticate, require_auth
 from app.config import settings
 from app.services.exchange import create_exchange, symbol_assets
 
@@ -17,8 +18,21 @@ async def health_check():
     return {"status": "healthy", "dry_run": settings.DRY_RUN}
 
 
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=100)
+    password: str = Field(min_length=1, max_length=200)
+
+
+@router.post("/api/auth/login")
+async def login(credentials: LoginRequest, request: Request):
+    """Dashboard-Login: liefert ein JWT für den Authorization-Header"""
+    client = request.client.host if request.client else "unknown"
+    token = authenticate(credentials.username, credentials.password, client)
+    return {"access_token": token, "token_type": "bearer"}
+
+
 @router.get("/api/status")
-async def get_status(db: Session = Depends(get_db)):
+async def get_status(db: Session = Depends(get_db), user: str = Depends(require_auth)):
     """Get current bot status"""
     from app.api.metrics import bot_uptime_seconds, bot_last_signal_age
     import time
@@ -46,7 +60,7 @@ async def get_status(db: Session = Depends(get_db)):
 async def get_signals(
     limit: int = Query(50, ge=1, le=500),
     db: Session = Depends(get_db),
-    api_key: str = Depends(verify_api_key)
+    user: str = Depends(require_auth)
 ):
     """Get historical signals"""
     repo = SignalRepository(db)
@@ -70,7 +84,7 @@ async def get_trades(
     limit: int = Query(100, ge=1, le=1000),
     symbol: Optional[str] = None,
     db: Session = Depends(get_db),
-    api_key: str = Depends(verify_api_key)
+    user: str = Depends(require_auth)
 ):
     """Get historical trades"""
     repo = TradeRepository(db)
@@ -98,7 +112,7 @@ async def get_trades(
 
 
 @router.get("/api/portfolio")
-async def get_portfolio(db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+async def get_portfolio(db: Session = Depends(get_db), user: str = Depends(require_auth)):
     """Get current portfolio value and P&L"""
     try:
         exchange = create_exchange()
@@ -129,7 +143,7 @@ async def get_portfolio(db: Session = Depends(get_db), api_key: str = Depends(ve
 
 
 @router.get("/api/config")
-async def get_config(db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+async def get_config(db: Session = Depends(get_db), user: str = Depends(require_auth)):
     """Get current bot configuration"""
     config_repo = ConfigRepository(db)
     db_config = config_repo.get_all()
@@ -151,7 +165,7 @@ async def get_config(db: Session = Depends(get_db), api_key: str = Depends(verif
 async def update_config(
     config_data: dict,
     db: Session = Depends(get_db),
-    api_key: str = Depends(verify_api_key)
+    user: str = Depends(require_auth)
 ):
     """Update bot configuration dynamically"""
     config_repo = ConfigRepository(db)

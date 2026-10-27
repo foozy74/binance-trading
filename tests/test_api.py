@@ -50,17 +50,47 @@ class TestHealthEndpoint:
         assert data["dry_run"] in [True, False]
 
 
+@pytest.fixture
+def auth_headers(client, monkeypatch):
+    from app.api import auth
+    from app.config import settings
+    monkeypatch.setattr(settings, "ADMIN_USERNAME", "admin")
+    monkeypatch.setattr(settings, "ADMIN_PASSWORD", "sehr-geheimes-pw")
+    auth._FAILED_LOGINS.clear()
+    response = client.post("/api/auth/login", json={"username": "admin", "password": "sehr-geheimes-pw"})
+    assert response.status_code == 200
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+class TestLoginEndpoint:
+    def test_login_wrong_password(self, client, auth_headers):
+        response = client.post("/api/auth/login", json={"username": "admin", "password": "falsch"})
+        assert response.status_code == 401
+
+    def test_login_rejects_invalid_body(self, client):
+        response = client.post("/api/auth/login", json={"username": "admin"})
+        assert response.status_code == 422
+
+    def test_token_grants_access(self, client, auth_headers):
+        response = client.get("/api/signals", headers=auth_headers)
+        assert response.status_code == 200
+
+
 class TestStatusEndpoint:
-    def test_status_endpoint(self, client):
+    def test_status_requires_auth(self, client):
         response = client.get("/api/status")
+        assert response.status_code == 401
+
+    def test_status_endpoint(self, client, auth_headers):
+        response = client.get("/api/status", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert "status" in data
         assert "dry_run" in data
         assert "active_strategy" in data
     
-    def test_status_running(self, client):
-        response = client.get("/api/status")
+    def test_status_running(self, client, auth_headers):
+        response = client.get("/api/status", headers=auth_headers)
         data = response.json()
         assert data["status"] == "running"
 

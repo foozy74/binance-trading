@@ -1,19 +1,15 @@
 import { useState } from 'react'
+import { apiFetch } from '../api'
 
-export default function ConfigPanel({ apiKey }) {
+export default function ConfigPanel() {
   const [config, setConfig] = useState(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
   const fetchConfig = async () => {
-    if (!apiKey) return
     setLoading(true)
     try {
-      const res = await fetch('/api/config', {
-        headers: { 'X-API-Key': apiKey }
-      })
-      const data = await res.json()
-      setConfig(data)
+      setConfig(await apiFetch('/api/config'))
     } catch (err) {
       setMessage('Failed to load config')
     } finally {
@@ -22,21 +18,15 @@ export default function ConfigPanel({ apiKey }) {
   }
 
   const updateConfig = async (key, value) => {
-    if (!apiKey) return
     try {
-      const res = await fetch('/api/config', {
+      await apiFetch('/api/config', {
         method: 'PUT',
-        headers: {
-          'X-API-Key': apiKey,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [key]: value })
       })
-      if (res.ok) {
-        setMessage('Config updated!')
-        setTimeout(() => setMessage(''), 3000)
-        fetchConfig()
-      }
+      setMessage('Config updated!')
+      setTimeout(() => setMessage(''), 3000)
+      fetchConfig()
     } catch (err) {
       setMessage('Failed to update config')
     }

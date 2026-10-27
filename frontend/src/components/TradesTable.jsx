@@ -3,7 +3,7 @@ export default function TradesTable({ trades }) {
     return (
       <div className="glass-card">
         <h2>💼 Recent Trades</h2>
-        <p style={{ color: '#a0a0b0' }}>No trades available. Enter API key to load.</p>
+        <p style={{ color: '#a0a0b0' }}>No trades available yet.</p>
       </div>
     )
   }

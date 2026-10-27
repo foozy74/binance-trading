@@ -6,8 +6,10 @@ services:
     environment:
       - DRY_RUN=${DRY_RUN:-true}
       - DATABASE_URL=sqlite:///./data/trading.db
-      - JWT_SECRET=${JWT_SECRET:-change-this-in-production}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET setzen (min. 32 Zeichen)}
       - API_KEYS=${API_KEYS:-}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - BINANCE_API_KEY=${BINANCE_API_KEY:-}
       - BINANCE_API_SECRET=${BINANCE_API_SECRET:-}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}

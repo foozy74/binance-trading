@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 from typing import List, Literal, Optional
 import secrets
@@ -23,8 +23,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./data/trading.db"
     
     # Auth
-    JWT_SECRET: str = secrets.token_urlsafe(32)
+    JWT_SECRET: str = Field(default_factory=lambda: secrets.token_urlsafe(32), min_length=32)
     API_KEYS: str = ""  # Format: name1:secret1,name2:secret2
+    # Dashboard-Login; leeres Passwort = Login deaktiviert
+    ADMIN_USERNAME: str = "admin"
+    ADMIN_PASSWORD: str = ""
     
     # Telegram
     TELEGRAM_BOT_TOKEN: Optional[str] = None
@@ -47,6 +50,23 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     
+    @field_validator("ADMIN_PASSWORD")
+    @classmethod
+    def _admin_password_strong(cls, value: str) -> str:
+        """Leer (deaktiviert) oder mindestens 12 Zeichen."""
+        if value and len(value) < 12:
+            raise ValueError("ADMIN_PASSWORD muss mindestens 12 Zeichen lang sein")
+        return value
+
+    @field_validator("API_KEYS")
+    @classmethod
+    def _api_keys_strong(cls, value: str) -> str:
+        """Jeder API-Key-Secret mindestens 16 Zeichen – der Key-Pfad hat keine Login-Sperre."""
+        for pair in filter(None, value.split(",")):
+            if len(pair.split(":", 1)[-1].strip()) < 16:
+                raise ValueError("Jeder Secret in API_KEYS muss mindestens 16 Zeichen lang sein")
+        return value
+
     @property
     def parsed_api_keys(self) -> dict:
         """Parse API keys from comma-separated name:secret pairs"""
