@@ -172,3 +172,11 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Lokale Secrets (Datei, nicht Verzeichnis)
+/env
+
+# Frontend-Abhängigkeiten, macOS, lokale SQLite-Datenbanken
+node_modules/
+.DS_Store
+*.db
