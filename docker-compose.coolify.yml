@@ -1,8 +1,8 @@
 version: '3.8'
+# Kein eigenes Netzwerk/container_name: Coolify hängt die Services in sein App-Netz mit Traefik
 services:
   trading-bot:
     build: .
-    container_name: binance-trading-bot
     environment:
       - DRY_RUN=${DRY_RUN:-true}
       - DATABASE_URL=sqlite:///./data/trading.db
@@ -34,12 +34,9 @@ services:
       retries: 3
       start_period: 40s
     restart: unless-stopped
-    networks:
-      - trading-network
 
   frontend:
     build: ./frontend
-    container_name: trading-frontend
     # Kein ports-Mapping: Coolifys Traefik belegt 80/443 und routet über die Domain
     depends_on:
       - trading-bot
@@ -49,15 +46,9 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    networks:
-      - trading-network
     labels:
       - coolify.app.name=binance-trading-frontend
       - coolify.app.healthCheckPath=/
 
 volumes:
   trading_data:
-
-networks:
-  trading-network:
-    driver: bridge
