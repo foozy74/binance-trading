@@ -40,8 +40,7 @@ services:
   frontend:
     build: ./frontend
     container_name: trading-frontend
-    ports:
-      - "80:80"
+    # Kein ports-Mapping: Coolifys Traefik belegt 80/443 und routet über die Domain
     depends_on:
       - trading-bot
     healthcheck:
