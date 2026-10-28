@@ -19,7 +19,8 @@ class TradingBot:
     
     def __init__(self):
         self.running = False
-        self.strategy = get_strategy(settings.ACTIVE_STRATEGY)
+        self._strategy_key = settings.ACTIVE_STRATEGY
+        self.strategy = get_strategy(self._strategy_key)
         self.binance = BinanceService(dry_run=settings.DRY_RUN)
         self.telegram = TelegramService()
         self.db: Optional[Session] = None
@@ -50,8 +51,16 @@ class TradingBot:
             
             time.sleep(60)  # Wait 1 minute between iterations
     
+    def _sync_strategy(self):
+        """Strategie wechseln, wenn sie im Dashboard geändert wurde"""
+        if self._strategy_key != settings.ACTIVE_STRATEGY:
+            self.strategy = get_strategy(settings.ACTIVE_STRATEGY)
+            self._strategy_key = settings.ACTIVE_STRATEGY
+            print(f"🔄 Strategie gewechselt: {self.strategy.name}")
+
     def _execute_loop(self):
         """Execute one iteration of the trading loop"""
+        self._sync_strategy()
         db = SessionLocal()
         try:
             # Fetch market data

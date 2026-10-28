@@ -128,3 +128,25 @@ class TestProtectedEndpoints:
     def test_config_requires_api_key(self, client):
         response = client.get("/api/config")
         assert response.status_code == 401
+
+
+class TestConfigUpdate:
+    @pytest.fixture(autouse=True)
+    def restore_settings(self, monkeypatch):
+        from app.config import settings
+        for field in ("ACTIVE_STRATEGY", "TRADE_PERCENTAGE", "TRAILING_STOP_PERCENT", "TAKE_PROFIT_PERCENT"):
+            monkeypatch.setattr(settings, field, getattr(settings, field))
+
+    def test_strategy_change_visible_in_status_and_config(self, client, auth_headers):
+        response = client.put("/api/config", json={"active_strategy": "macd_crossover"}, headers=auth_headers)
+        assert response.status_code == 200
+        assert client.get("/api/status", headers=auth_headers).json()["active_strategy"] == "macd_crossover"
+        config = client.get("/api/config", headers=auth_headers).json()
+        assert config["active_strategy"] == "macd_crossover"
+        assert config["db_overrides"]["active_strategy"] == "macd_crossover"
+
+    @pytest.mark.parametrize("body", [{"active_strategy": "gibt_es_nicht"}, {"trade_percentage": 5}])
+    def test_invalid_value_rejected(self, client, auth_headers, body):
+        response = client.put("/api/config", json=body, headers=auth_headers)
+        assert response.status_code == 422
+        assert client.get("/api/config", headers=auth_headers).json()["db_overrides"] == {}

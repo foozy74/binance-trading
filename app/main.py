@@ -5,10 +5,11 @@ import threading
 import time
 
 from app.config import settings
-from app.db.database import init_db, get_db
+from app.db.database import init_db, get_db, SessionLocal
 from app.api.routes import router
 from app.api.metrics import get_metrics
 from app.bot.trader import TradingBot
+from app.bot.runtime_config import load_saved_config
 
 
 trading_bot = None
@@ -21,6 +22,11 @@ async def lifespan(app: FastAPI):
     
     # Startup
     init_db()
+    db = SessionLocal()
+    try:
+        load_saved_config(db)
+    finally:
+        db.close()
     trading_bot = TradingBot()
     trading_thread = threading.Thread(target=trading_bot.run, daemon=True)
     trading_thread.start()

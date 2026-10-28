@@ -6,6 +6,7 @@ from app.db.database import get_db
 from app.db.repository import TradeRepository, SignalRepository, ConfigRepository
 from app.db.models import Trade, Signal
 from app.api.auth import authenticate, require_auth
+from app.bot.runtime_config import ConfigUpdate, apply_config
 from app.config import settings
 from app.services.exchange import create_exchange, symbol_assets
 
@@ -163,19 +164,14 @@ async def get_config(db: Session = Depends(get_db), user: str = Depends(require_
 
 @router.put("/api/config")
 async def update_config(
-    config_data: dict,
+    update: ConfigUpdate,
     db: Session = Depends(get_db),
     user: str = Depends(require_auth)
 ):
-    """Update bot configuration dynamically"""
+    """Bot-Konfiguration ändern; wirkt ab dem nächsten Bot-Durchlauf und überlebt Neustarts"""
     config_repo = ConfigRepository(db)
-    updated = {}
-    
-    allowed_keys = ["active_strategy", "trade_percentage", "trailing_stop_percent", "take_profit_percent"]
-    
-    for key, value in config_data.items():
-        if key in allowed_keys:
-            config_repo.set(key, str(value))
-            updated[key] = value
-    
-    return {"updated": updated, "message": "Config updated (some settings may require restart)"}
+    # Erst speichern, dann übernehmen: schlägt das Speichern fehl, bleibt der laufende Stand unverändert
+    for key, value in update.model_dump(exclude_none=True).items():
+        config_repo.set(key, str(value))
+    updated = apply_config(update)
+    return {"updated": updated, "message": "Config updated"}
