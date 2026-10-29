@@ -1,6 +1,7 @@
 import requests
 from typing import Optional
 from app.config import settings
+from app.services.exchange import symbol_assets
 
 
 class TelegramService:
@@ -15,19 +16,26 @@ class TelegramService:
         """Send message to Telegram chat"""
         if not self.enabled:
             return False
-        
+
         try:
-            url = f"https://api.telegram.org/bot{self.token}/sendMessage"
-            params = {
-                "chat_id": self.chat_id,
-                "text": text,
-                "parse_mode": "HTML"
-            }
-            response = requests.get(url, params=params, timeout=10)
-            return response.status_code == 200
-        except Exception as e:
-            print(f"❌ Telegram error: {e}")
+            response = requests.post(
+                f"https://api.telegram.org/bot{self.token}/sendMessage",
+                json={"chat_id": self.chat_id, "text": text, "parse_mode": "HTML"},
+                timeout=10,
+            )
+        except requests.RequestException as e:
+            # requests nennt die URL samt Bot-Token in der Fehlermeldung – nie ungefiltert loggen
+            print(f"❌ Telegram error: {type(e).__name__}: {str(e).replace(self.token, '***')}")
             return False
+
+        if response.status_code != 200:
+            try:
+                description = response.json().get("description", "")
+            except ValueError:
+                description = ""
+            print(f"❌ Telegram error: HTTP {response.status_code} {description}")
+            return False
+        return True
     
     def send_trade_notification(self, trade_data: dict) -> bool:
         """Send trade execution notification"""
@@ -39,6 +47,7 @@ class TelegramService:
         stop_loss = trade_data.get('stop_loss')
         take_profit = trade_data.get('take_profit')
         is_dry_run = trade_data.get('is_dry_run', False)
+        base, quote = symbol_assets(symbol) if "/" in symbol else ("", "")
         
         mode_text = "🧪 DRY RUN" if is_dry_run else "✅ LIVE"
         
@@ -47,15 +56,15 @@ class TelegramService:
             f"📢 Trade ausgeführt!\n"
             f"💰 Aktion: {side}\n"
             f"📈 Symbol: {symbol}\n"
-            f"🔹 Menge: {amount:.8f} BTC\n"
-            f"💵 Wert: {usdt_value:.2f} USDT\n"
-            f"💹 Preis: {price:.2f} USDT\n"
+            f"🔹 Menge: {amount:.8f} {base}\n"
+            f"💵 Wert: {usdt_value:.2f} {quote}\n"
+            f"💹 Preis: {price:.2f} {quote}\n"
         )
         
         if stop_loss:
-            message += f"📌 Stop-Loss: {stop_loss:.2f} USDT\n"
+            message += f"📌 Stop-Loss: {stop_loss:.2f} {quote}\n"
         if take_profit:
-            message += f"📌 Take-Profit: {take_profit:.2f} USDT\n"
+            message += f"📌 Take-Profit: {take_profit:.2f} {quote}\n"
         
         return self.send_message(message)
     
