@@ -4,6 +4,7 @@ import StatusCard from './components/StatusCard'
 import TradesTable from './components/TradesTable'
 import SignalsList from './components/SignalsList'
 import ConfigPanel from './components/ConfigPanel'
+import BacktestPanel from './components/BacktestPanel'
 import LoginForm from './components/LoginForm'
 import { apiFetch, getToken, logout, LOGOUT_EVENT } from './api'
 
@@ -74,6 +75,7 @@ function App() {
         <SignalsList signals={signals} />
         <TradesTable trades={trades} />
         <ConfigPanel />
+        <BacktestPanel />
       </div>
     </div>
   )

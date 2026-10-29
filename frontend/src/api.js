@@ -33,6 +33,10 @@ export async function apiFetch(path, options = {}) {
     logout()
     throw new Error('Sitzung abgelaufen')
   }
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  if (!res.ok) {
+    // FastAPI liefert lesbare Fehler als {"detail": "..."}; Validierungsfehler sind Listen
+    const body = await res.json().catch(() => ({}))
+    throw new Error(typeof body.detail === 'string' ? body.detail : `HTTP ${res.status}`)
+  }
   return res.json()
 }

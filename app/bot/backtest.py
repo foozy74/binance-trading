@@ -34,6 +34,11 @@ def fetch_candles(symbol: str, timeframe: str, count: int) -> pd.DataFrame:
     return df
 
 
+def buy_and_hold(candles: pd.DataFrame) -> float:
+    """Rendite von Kauf zum ersten handelbaren Open (nach WINDOW) bis zum letzten Close"""
+    return candles['close'].iloc[-1] / candles['open'].iloc[WINDOW] - 1
+
+
 def generate_signals(candles: pd.DataFrame, names: List[str]) -> Dict[str, List[str]]:
     """Signal je Kerze und Strategie, berechnet wie live auf dem rollenden Fenster"""
     strategies = {name: STRATEGIES[name]() for name in names}
@@ -112,8 +117,7 @@ def main() -> None:
     candles = fetch_candles(args.symbol, args.timeframe, args.candles)
     print(f"📈 {len(candles)} Kerzen {args.symbol} {args.timeframe}: "
           f"{candles['timestamp'].iloc[0]} – {candles['timestamp'].iloc[-1]}")
-    hold = candles['close'].iloc[-1] / candles['open'].iloc[WINDOW] - 1
-    print(f"📌 Buy & Hold: {hold:+.2%}")
+    print(f"📌 Buy & Hold: {buy_and_hold(candles):+.2%}")
     variants = {
         "ohne SL/TP": (None, None),
         f"SL {args.stop_loss:.1%} / TP {args.take_profit:.1%}": (args.stop_loss, args.take_profit),

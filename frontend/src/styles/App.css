@@ -216,3 +216,22 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+.backtest-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: flex-end;
+  margin-bottom: 15px;
+}
+
+.backtest-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #a0a0b0;
+}
+
+.backtest-form .auth-input {
+  width: 160px;
+}

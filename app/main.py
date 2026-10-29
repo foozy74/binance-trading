@@ -7,6 +7,7 @@ import time
 from app.config import settings
 from app.db.database import init_db, get_db, SessionLocal
 from app.api.routes import router
+from app.api.backtest_route import router as backtest_router
 from app.api.metrics import get_metrics
 from app.bot.trader import TradingBot
 from app.bot.runtime_config import load_saved_config
@@ -54,6 +55,7 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(backtest_router)
 
 
 @app.get("/metrics")
