@@ -15,6 +15,7 @@ pytest --cov=app --cov-report=html
 python -m app.bot.backtest --symbol BTC/USDC:USDC --candles 5000   # backtest all strategies on Hyperliquid candles
 python -m app.bot.walk_forward --symbol BTC/USDC:USDC --train 2000 --test 500   # out-of-sample param selection
 python -m app.bot.walk_forward --symbol BTC/USDC:USDC --compare-stops   # fixed-% vs ATR stops, OOS
+python -m app.bot.compare_signals --limit 500     # live signals from DB vs backtest replay (run in bot container)
 cd frontend && npm run dev                        # React/Vite dashboard (npm run build → dist/)
 ```
 
