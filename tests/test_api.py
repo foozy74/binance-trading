@@ -182,6 +182,7 @@ class TestBacktestEndpoint:
         assert [r["strategy"] for r in data["results"]] == ["macd_crossover"]
         assert {"total_return", "max_drawdown", "trades", "win_rate"} <= set(data["results"][0])
         assert "buy_hold" in data and data["candles"] == 300
+        assert data["start"] == "2026-01-01T00:00:00+00:00"
 
     def test_all_strategies_by_default(self, client, auth_headers, candles):
         from app.bot.strategies import STRATEGIES

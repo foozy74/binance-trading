@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { apiFetch } from '../api'
+import { apiFetch, STRATEGIES } from '../api'
 
 export default function ConfigPanel() {
   const [config, setConfig] = useState(null)
@@ -65,10 +65,7 @@ export default function ConfigPanel() {
                 color: 'white'
               }}
             >
-              <option value="obv_vwap">OBV + VWAP</option>
-              <option value="rsi_divergence">RSI Divergence</option>
-              <option value="macd_crossover">MACD Crossover</option>
-              <option value="multi_signal">Multi Signal</option>
+              {Object.entries(STRATEGIES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
             </select>
           </div>
           <div className="stat-item">

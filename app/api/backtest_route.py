@@ -51,7 +51,9 @@ def run_backtest(params: BacktestRequest, user: str = Depends(require_auth)):
             results.append({"strategy": name, "total_return": r["total_return"], "max_drawdown": r["max_drawdown"],
                             "trades": r["trades"], "win_rate": r["wins"] / r["trades"] if r["trades"] else 0})
         return {"symbol": settings.SYMBOL, "candles": len(candles),
-                "start": candles["timestamp"].iloc[0].isoformat(), "end": candles["timestamp"].iloc[-1].isoformat(),
+                # Kerzen sind naive UTC; mit Offset, sonst liest der Browser sie als Ortszeit
+                "start": candles["timestamp"].iloc[0].tz_localize("UTC").isoformat(),
+                "end": candles["timestamp"].iloc[-1].tz_localize("UTC").isoformat(),
                 "buy_hold": buy_and_hold(candles), "results": results}
     finally:
         _RUNNING.release()

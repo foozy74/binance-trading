@@ -40,3 +40,11 @@ export async function apiFetch(path, options = {}) {
   }
   return res.json()
 }
+
+// Anzeigenamen der Strategien aus app/bot/strategies (STRATEGIES) – bei neuer Strategie hier ergänzen
+export const STRATEGIES = {
+  obv_vwap: 'OBV + VWAP',
+  rsi_divergence: 'RSI Divergence',
+  macd_crossover: 'MACD Crossover',
+  multi_signal: 'Multi Signal'
+}

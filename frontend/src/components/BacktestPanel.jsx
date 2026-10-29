@@ -1,13 +1,7 @@
 import { useState } from 'react'
-import { apiFetch } from '../api'
+import { apiFetch, STRATEGIES } from '../api'
 
-const STRATEGIES = {
-  '': 'Alle Strategien',
-  obv_vwap: 'OBV + VWAP',
-  rsi_divergence: 'RSI Divergence',
-  macd_crossover: 'MACD Crossover',
-  multi_signal: 'Multi Signal'
-}
+const CHOICES = { '': 'Alle Strategien', ...STRATEGIES }
 
 const pct = (value) => `${(value * 100).toFixed(2)}%`
 const tone = (value) => (value >= 0 ? 'positive' : 'negative')
@@ -51,7 +45,7 @@ export default function BacktestPanel() {
       <form onSubmit={run} className="backtest-form">
         <label>Strategie
           <select value={form.strategy} onChange={change('strategy')} className="auth-input">
-            {Object.entries(STRATEGIES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            {Object.entries(CHOICES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
           </select>
         </label>
         <label>Kerzen (1h)
