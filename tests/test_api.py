@@ -36,6 +36,13 @@ def client(db_session):
     app.dependency_overrides.clear()
 
 
+def test_app_startup_starts_bot(bot_start):
+    """Regression: Lifespan rief run() ohne running=True auf, der Loop lief nie"""
+    with TestClient(app):
+        pass
+    bot_start.assert_called_once()
+
+
 class TestHealthEndpoint:
     def test_health_check(self, client):
         response = client.get("/health")

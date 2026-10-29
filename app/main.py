@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import threading
 import time
 
 from app.config import settings
@@ -29,8 +28,7 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
     trading_bot = TradingBot()
-    trading_thread = threading.Thread(target=trading_bot.run, daemon=True)
-    trading_thread.start()
+    trading_bot.start()  # setzt running=True, sonst endet run() sofort
     
     yield
     

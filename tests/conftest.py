@@ -5,12 +5,23 @@ from app.db.database import Base, get_db
 from app.db.models import Trade, Signal
 from app.main import app
 import time
+from unittest.mock import MagicMock
+
+from app.bot.trader import TradingBot
 
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+@pytest.fixture(autouse=True)
+def bot_start(monkeypatch):
+    """Bot-Loop in Tests nie starten: er würde Kerzen von der Börse holen und in data/trading.db schreiben"""
+    start = MagicMock()
+    monkeypatch.setattr(TradingBot, "start", start)
+    return start
 
 
 @pytest.fixture(scope="function")
