@@ -14,7 +14,7 @@ Aufruf: python -m app.bot.price_action --symbol BTC/USDC:USDC --timeframe 1h --c
 """
 import argparse
 from itertools import product
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Callable, Dict, List, NamedTuple, Optional, Tuple
 
 import pandas as pd
 
@@ -148,14 +148,15 @@ def simulate_orders(candles: pd.DataFrame, orders: List[Optional[Order]], fee: f
             "total_return": equity - 1, "max_drawdown": max_dd}
 
 
-def walk_forward_orders(candles: pd.DataFrame, grid: List[Params], start: int, train: int, test: int,
-                        fee: float) -> Dict:
-    """Je Fold (k, min_crv) mit der besten Trainingsrendite wählen, nur Testfenster zählen.
-    fixed = jede Parameterkombination unverändert über alle Testfenster (ohne Auswahl)."""
-    orders = {p: build_orders(candles, *p) for p in grid}
+def walk_forward_orders(candles: pd.DataFrame, grid: List[Tuple], start: int, train: int, test: int,
+                        fee: float, build: Callable = build_orders, simulate: Callable = simulate_orders) -> Dict:
+    """Je Fold die Parameter (z. B. k, min_crv) mit der besten Trainingsrendite wählen, nur Testfenster zählen.
+    fixed = jede Parameterkombination unverändert über alle Testfenster (ohne Auswahl).
+    build/simulate: Order-Erzeugung und Simulation (auch vom Volumenprofil genutzt)."""
+    orders = {p: build(candles, *p) for p in grid}
 
-    def score(p: Params, a: int, b: int) -> float:
-        return simulate_orders(candles.iloc[a:b].reset_index(drop=True), orders[p][a:b], fee)["total_return"]
+    def score(p: Tuple, a: int, b: int) -> float:
+        return simulate(candles.iloc[a:b].reset_index(drop=True), orders[p][a:b], fee)["total_return"]
 
     oos, chosen, fixed = 1.0, [], {p: 1.0 for p in grid}
     for train_start, test_start, test_end in make_folds(len(candles), start, train, test):
