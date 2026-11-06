@@ -5,7 +5,7 @@
 ```bash
 # Install dependencies
 python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
 # Run FastAPI server (development)
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000

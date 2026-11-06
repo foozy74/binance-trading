@@ -61,3 +61,11 @@ def test_trade_notification_uses_symbol_assets(service, monkeypatch):
     text = sent.call_args.args[0]
     assert "0.50000000 ETH" in text and "1500.00 USDC" in text and "Stop-Loss: 3100.00 USDC" in text
     assert "BTC" not in text and "USDT" not in text
+
+
+def test_trade_notification_shows_exit_reason(service, monkeypatch):
+    sent = MagicMock(return_value=True)
+    monkeypatch.setattr(service, "send_message", sent)
+    service.send_trade_notification({"side": "sell", "symbol": "BTC/USDC:USDC", "amount": 0.1, "price": 48000,
+                                     "usdt_value": 4800, "reason": "stop_loss"})
+    assert "stop_loss" in sent.call_args.args[0]

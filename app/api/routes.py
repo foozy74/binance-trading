@@ -35,7 +35,7 @@ async def login(credentials: LoginRequest, request: Request):
 @router.get("/api/status")
 async def get_status(db: Session = Depends(get_db), user: str = Depends(require_auth)):
     """Get current bot status"""
-    from app.api.metrics import bot_uptime_seconds, bot_last_signal_age
+    from app.api.metrics import bot_uptime_seconds
     import time
     
     signal_repo = SignalRepository(db)
@@ -114,7 +114,7 @@ async def get_trades(
 
 @router.get("/api/portfolio")
 async def get_portfolio(db: Session = Depends(get_db), user: str = Depends(require_auth)):
-    """Get current portfolio value and P&L"""
+    """Aktueller Portfoliowert aus Börsen-Saldo und Kurs"""
     try:
         exchange = create_exchange()
         base, quote = symbol_assets(settings.SYMBOL)
@@ -129,15 +129,11 @@ async def get_portfolio(db: Session = Depends(get_db), user: str = Depends(requi
         
         total_value = (btc_balance * btc_price) + usdt_balance
         
-        trade_repo = TradeRepository(db)
-        pnl = trade_repo.get_total_pnl()
-        
         return {
             "btc_balance": btc_balance,
             "usdt_balance": usdt_balance,
             "btc_price": btc_price,
-            "total_value_usdt": total_value,
-            "total_pnl_usdt": pnl
+            "total_value_usdt": total_value
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch portfolio: {str(e)}")

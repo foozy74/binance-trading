@@ -20,16 +20,6 @@ class TradeRepository:
     
     def get_by_symbol(self, symbol: str, limit: int = 50) -> List[Trade]:
         return self.db.query(Trade).filter(Trade.symbol == symbol).order_by(Trade.created_at.desc()).limit(limit).all()
-    
-    def get_total_pnl(self) -> float:
-        trades = self.db.query(Trade).all()
-        buys = [t for t in trades if t.side == "buy"]
-        sells = [t for t in trades if t.side == "sell"]
-        
-        total_bought = sum(t.usdt_value for t in buys)
-        total_sold = sum(t.usdt_value for t in sells)
-        
-        return total_sold - total_bought
 
 
 class SignalRepository:

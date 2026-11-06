@@ -121,6 +121,8 @@ def test_dry_run_simulated_stop_closes_position(hyperliquid, monkeypatch):
     service.place_protection("BTC/USDC:USDC", "buy", 0.1, 50000, {})
 
     service.exchange.fetch_ticker.return_value = {"last": 50000 * (1 - settings.TRAILING_STOP_PERCENT) - 1}
-    assert service.check_simulated_stops("BTC/USDC:USDC") == "stop_loss"
+    exit_price = 50000 * (1 - settings.TRAILING_STOP_PERCENT) - 1
+    assert service.check_simulated_stops("BTC/USDC:USDC") == {
+        "reason": "stop_loss", "side": "sell", "amount": pytest.approx(0.1), "price": exit_price}
     assert service.fetch_net_position("BTC/USDC:USDC") == pytest.approx(0)
     assert service.check_simulated_stops("BTC/USDC:USDC") is None

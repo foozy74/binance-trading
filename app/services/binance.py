@@ -85,8 +85,8 @@ class BinanceService:
         if ids:
             self.exchange.cancel_orders(ids, symbol)
 
-    def check_simulated_stops(self, symbol: str) -> Optional[str]:
-        """Dry-Run: schließt die simulierte Position, wenn der Preis SL/TP erreicht"""
+    def check_simulated_stops(self, symbol: str) -> Optional[Dict]:
+        """Dry-Run: schließt die simulierte Position, wenn der Preis SL/TP erreicht; liefert den Ausstieg"""
         net = self._sim_net_position
         if not self.dry_run or not self._sim_stops or not net:
             return None
@@ -97,9 +97,11 @@ class BinanceService:
         hit_tp = tp is not None and direction * (price - tp) >= 0
         if not (hit_sl or hit_tp):
             return None
-        self.create_order(symbol, 'sell' if direction > 0 else 'buy', abs(net))
+        side = 'sell' if direction > 0 else 'buy'
+        order = self.create_order(symbol, side, abs(net))
         self._sim_stops = None
-        return 'stop_loss' if hit_sl else 'take_profit'
+        return {'reason': 'stop_loss' if hit_sl else 'take_profit', 'side': side, 'amount': abs(net),
+                'price': order['price']}
 
     def calculate_position_size(self, side: str, balance: Dict, ticker: Dict) -> float:
         """Calculate position size based on trade percentage"""

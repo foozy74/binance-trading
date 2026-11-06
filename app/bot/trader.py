@@ -11,7 +11,7 @@ from app.services.binance import BinanceService
 from app.services.telegram import TelegramService
 from app.db.database import SessionLocal
 from app.db.repository import TradeRepository, SignalRepository
-from app.api.metrics import bot_trades_total, bot_signals_total, bot_profit_loss, bot_portfolio_value
+from app.api.metrics import bot_trades_total, bot_signals_total
 
 
 class TradingBot:
@@ -67,9 +67,13 @@ class TradingBot:
             df = fetch_market_data()
 
             # Dry-Run: SL/TP minütlich gegen den aktuellen Preis prüfen (live erledigt das die Börse)
-            stop_hit = self.binance.check_simulated_stops(settings.SYMBOL)
-            if stop_hit:
-                print(f"🧪 Simulierte Position geschlossen: {stop_hit}")
+            stop_exit = self.binance.check_simulated_stops(settings.SYMBOL)
+            if stop_exit:
+                print(f"🧪 Simulierte Position geschlossen: {stop_exit['reason']}")
+                # shortcut: live schließt die Börse per SL/TP, der Bot erfährt es nicht – vor Live-Betrieb
+                # Füllungen der Börse abgleichen
+                self._record_trade(db, stop_exit['side'].upper(), stop_exit['amount'], stop_exit['price'], {},
+                                   status=stop_exit['reason'])
 
             # Pro abgeschlossener Kerze nur einmal auswerten, sonst wird dasselbe Signal jede Minute gehandelt
             candle_ts = df.iloc[-1]["timestamp"]
@@ -149,8 +153,9 @@ class TradingBot:
             print("⛔ Kein Stop-Loss gesetzt (ATR noch nicht berechenbar oder Stop abgeschaltet)")
         return stops
 
-    def _record_trade(self, db: Session, signal: str, amount: float, price: float, stops: dict) -> None:
-        """Ausgeführten Trade speichern, zählen und per Telegram melden"""
+    def _record_trade(self, db: Session, signal: str, amount: float, price: float, stops: dict,
+                      status: str = "executed") -> None:
+        """Ausgeführten Trade speichern, zählen und per Telegram melden; status = Grund bei SL/TP-Ausstieg"""
         trade_data = {
             "symbol": settings.SYMBOL,
             "side": signal.lower(),
@@ -162,9 +167,9 @@ class TradingBot:
             "is_dry_run": settings.DRY_RUN,
         }
         try:
-            TradeRepository(db).create({**trade_data, "status": "executed"})
+            TradeRepository(db).create({**trade_data, "status": status})
         except Exception as e:
             print(f"❌ Trade nicht gespeichert: {e}")
         bot_trades_total.labels(side=signal.lower(), dry_run=str(settings.DRY_RUN)).inc()
         print(f"✅ Trade executed: {signal} {amount:.8f} @ {price:.2f}")
-        self.telegram.send_trade_notification(trade_data)
+        self.telegram.send_trade_notification(trade_data if status == "executed" else {**trade_data, "reason": status})

@@ -117,3 +117,22 @@ def test_volume_filter_blocks_low_volume_signal(monkeypatch, last_volume, trades
     bot._execute_loop()
 
     assert bot._execute_trade.call_count == trades
+
+
+def test_dry_run_stop_exit_is_saved_and_notified(monkeypatch):
+    repo = MagicMock()
+    monkeypatch.setattr(trader, "TradeRepository", MagicMock(return_value=repo))
+    monkeypatch.setattr(trader, "SessionLocal", MagicMock())
+    monkeypatch.setattr(trader, "fetch_market_data", lambda: pd.DataFrame({"timestamp": [1]}))
+    bot = trader.TradingBot()
+    bot._last_candle_ts = 1  # keine neue Kerze -> nur die Stop-Prüfung läuft
+    bot.telegram = MagicMock()
+    bot.binance = MagicMock()
+    bot.binance.check_simulated_stops.return_value = {
+        "reason": "stop_loss", "side": "sell", "amount": 0.1, "price": 48000.0}
+
+    bot._execute_loop()
+
+    saved = repo.create.call_args.args[0]
+    assert (saved["side"], saved["amount"], saved["price"], saved["status"]) == ("sell", 0.1, 48000.0, "stop_loss")
+    assert bot.telegram.send_trade_notification.call_args.args[0]["reason"] == "stop_loss"

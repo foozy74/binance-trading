@@ -65,6 +65,8 @@ class TelegramService:
             message += f"📌 Stop-Loss: {stop_loss:.2f} {quote}\n"
         if take_profit:
             message += f"📌 Take-Profit: {take_profit:.2f} {quote}\n"
+        if trade_data.get('reason'):
+            message += f"🛑 Ausstieg: {trade_data['reason']}\n"
         
         return self.send_message(message)
     
