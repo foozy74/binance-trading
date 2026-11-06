@@ -110,9 +110,8 @@ class TradingBot:
             db.close()
     
     def _execute_trade(self, signal: str, df, db: Session):
-        """Execute a trade based on signal"""
+        """Order senden; erst nach gefüllter Order alte Stops ersetzen, Trade speichern und melden"""
         try:
-            # Get balance and calculate position size
             balance = self.binance.fetch_balance()
             ticker = self.binance.fetch_ticker(settings.SYMBOL)
             size = self.binance.calculate_position_size(signal, balance, ticker)
@@ -123,54 +122,49 @@ class TradingBot:
                 if amount is None:
                     print(f"⛔ {signal} übersprungen: Position in gleicher Richtung bereits offen")
                     return
-                self.binance.cancel_open_orders(settings.SYMBOL)
-
-            # Create order
             order = self.binance.create_order(settings.SYMBOL, signal.lower(), amount)
-
-            if order:
-                # Calculate stop loss and take profit
-                price = order.get('average') or order.get('price') or ticker['last']
-                signal_bar = df.iloc[-1].to_dict()
-                if is_perp:
-                    stops = self.binance.place_protection(settings.SYMBOL, signal, size, price, signal_bar)
-                else:
-                    stops = stop_prices(signal, price, signal_bar)
-                if 'stopLossPrice' not in stops:
-                    print("⛔ Kein Stop-Loss gesetzt (ATR noch nicht berechenbar oder Stop abgeschaltet)")
-                stop_loss, take_profit = stops.get('stopLossPrice'), stops.get('takeProfitPrice')
-                
-                # Store trade in database
-                trade_repo = TradeRepository(db)
-                trade = trade_repo.create({
-                    "symbol": settings.SYMBOL,
-                    "side": signal.lower(),
-                    "amount": amount,
-                    "price": price,
-                    "usdt_value": amount * price,
-                    "stop_loss": stop_loss,
-                    "take_profit": take_profit,
-                    "is_dry_run": settings.DRY_RUN,
-                    "status": "executed"
-                })
-                
-                # Update metrics
-                bot_trades_total.labels(side=signal.lower(), dry_run=str(settings.DRY_RUN)).inc()
-                
-                print(f"✅ Trade executed: {signal} {amount:.8f} BTC @ {price:.2f} USDT")
-                
-                # Send Telegram notification
-                trade_data = {
-                    "symbol": settings.SYMBOL,
-                    "side": signal.lower(),
-                    "amount": amount,
-                    "price": price,
-                    "usdt_value": amount * price,
-                    "stop_loss": stop_loss,
-                    "take_profit": take_profit,
-                    "is_dry_run": settings.DRY_RUN
-                }
-                self.telegram.send_trade_notification(trade_data)
-                
         except Exception as e:
+            # Order nicht ausgeführt: alte Stops bleiben stehen, die bestehende Position ist weiter geschützt
             print(f"❌ Failed to execute trade: {e}")
+            return
+        if not order:
+            return
+        price = order.get('average') or order.get('price') or ticker['last']
+        stops = self._protect(signal, size, price, df.iloc[-1].to_dict(), is_perp)
+        self._record_trade(db, signal, amount, price, stops)
+
+    def _protect(self, signal: str, size: float, price: float, signal_bar: dict, is_perp: bool) -> dict:
+        """SL/TP für die neue Position; scheitert das, ist die Order trotzdem gefüllt -> Alarm statt Abbruch"""
+        try:
+            if not is_perp:
+                return stop_prices(signal, price, signal_bar)
+            # Alte Trigger sind reduce-only, sie konnten die neue Position bis hierher nicht vergrößern
+            self.binance.cancel_open_orders(settings.SYMBOL)
+            stops = self.binance.place_protection(settings.SYMBOL, signal, size, price, signal_bar)
+        except Exception as e:
+            print(f"❌ Stops nicht gesetzt: {e}")
+            self.telegram.send_message(f"❌ {signal} {settings.SYMBOL} ausgeführt, aber OHNE Stop: {e}")
+            return {}
+        if 'stopLossPrice' not in stops:
+            print("⛔ Kein Stop-Loss gesetzt (ATR noch nicht berechenbar oder Stop abgeschaltet)")
+        return stops
+
+    def _record_trade(self, db: Session, signal: str, amount: float, price: float, stops: dict) -> None:
+        """Ausgeführten Trade speichern, zählen und per Telegram melden"""
+        trade_data = {
+            "symbol": settings.SYMBOL,
+            "side": signal.lower(),
+            "amount": amount,
+            "price": price,
+            "usdt_value": amount * price,
+            "stop_loss": stops.get('stopLossPrice'),
+            "take_profit": stops.get('takeProfitPrice'),
+            "is_dry_run": settings.DRY_RUN,
+        }
+        try:
+            TradeRepository(db).create({**trade_data, "status": "executed"})
+        except Exception as e:
+            print(f"❌ Trade nicht gespeichert: {e}")
+        bot_trades_total.labels(side=signal.lower(), dry_run=str(settings.DRY_RUN)).inc()
+        print(f"✅ Trade executed: {signal} {amount:.8f} @ {price:.2f}")
+        self.telegram.send_trade_notification(trade_data)
